@@ -1,0 +1,5 @@
+{
+  "name": "Backend Data Pipeline Assessment",
+  "description": "A full-stack backend assessment featuring Flask, FastAPI, and PostgreSQL for data ingestion and serving.",
+  "requestFramePermissions": []
+}

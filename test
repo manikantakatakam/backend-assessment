@@ -1,0 +1,69 @@
+1. Start the Environment
+Run the following command in your terminal. It should build the images and start the containers without errors.
+code
+Bash
+docker-compose up -d --build
+Check: Run docker ps. You should see three containers running: postgres, mock-server, and pipeline-service.
+2. Verify Part 1: Flask Mock Server (Port 5000)
+The mock server should serve the JSON data with pagination.
+Health Check:
+code
+Bash
+curl http://localhost:5000/api/health
+# Expected: {"status": "healthy"}
+Pagination Test:
+code
+Bash
+curl "http://localhost:5000/api/customers?page=1&limit=5"
+# Expected: 5 records, total: 21, page: 1, limit: 5
+Single Customer:
+code
+Bash
+curl http://localhost:5000/api/customers/CUST001
+# Expected: JSON for John Doe
+404 Handling:
+code
+Bash
+curl -i http://localhost:5000/api/customers/NONEXISTENT
+# Expected: HTTP 404 status
+3. Verify Part 2: FastAPI Pipeline (Port 8000)
+This service interacts with the database and the mock server.
+Trigger Ingestion:
+code
+Bash
+curl -X POST http://localhost:8000/api/ingest
+# Expected: {"status": "success", "records_processed": 21}
+Verify Database Storage:
+code
+Bash
+curl "http://localhost:8000/api/customers?page=1&limit=5"
+# Expected: Data returned from PostgreSQL, not the JSON file.
+Test Upsert Logic:
+Run the ingest command again:
+code
+Bash
+curl -X POST http://localhost:8000/api/ingest
+Then check the total count:
+code
+Bash
+curl "http://localhost:8000/api/customers"
+# Expected: "total" should still be 21.
+# If it's 42, your upsert (merge) logic is failing.
+4. Technical "Perfect" Checklist
+Check your code against these specific requirements:
+
+Auto-Pagination: Does pipeline-service/services/ingestion.py loop through pages if the mock server has more data than the limit? (My implementation does this using a while True loop).
+
+dlt Merge: Does the dlt pipeline use write_disposition="merge"? (Required for the "Upsert" requirement).
+
+Environment Variables: Are DATABASE_URL and MOCK_SERVER_URL used instead of hardcoded strings?
+
+Health Checks: Does docker-compose.yml have a health check for Postgres to prevent the pipeline from crashing on startup?
+
+Project Structure: Does your folder structure match the requested tree exactly?
+Troubleshooting the "Dockerfile not found" error
+If you still see the error failed to read dockerfile, ensure:
+You are in the root directory (/workspaces/backend-assessment).
+The Dockerfile in mock-server/ is named exactly Dockerfile (case-sensitive, no extension).
+Your docker-compose.yml points to the folder: build: ./mock-server.
+If all these tests pass, your submission is 100% complete and correct.
